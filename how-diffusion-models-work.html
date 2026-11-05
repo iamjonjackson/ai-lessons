@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How diffusion models work</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+:root{--bg:#F1F0F8;--surface:#fff;--ink:#1D1B3A;--mute:#615F7C;--line:#D9D6EA;--acc:#5B46D6;--accbg:#E6E1FB;--amber:#E8962A;--red:#B83A4B;--redbg:#F9E3E6;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121127;--surface:#1C1A38;--ink:#ECEAFB;--mute:#A4A1C4;--line:#33305A;--acc:#A99BFF;--accbg:#2A2560;--amber:#F2A33A;--red:#F08A98;--redbg:#3C1F2A;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121127;--surface:#1C1A38;--ink:#ECEAFB;--mute:#A4A1C4;--line:#33305A;--acc:#A99BFF;--accbg:#2A2560;--amber:#F2A33A;--red:#F08A98;--redbg:#3C1F2A;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.6 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:680px;margin:0 auto;padding:20px 18px 60px}
+h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif;line-height:1.15;margin:0 0 14px}
+h1{font-size:2.3rem;font-weight:800}h2{font-size:1.6rem;font-weight:800}h3{font-size:1.05rem;margin:22px 0 6px}
+p{margin:0 0 14px;max-width:62ch}
+.wave{display:flex;align-items:center;gap:5px;height:56px;margin:4px 0 22px}
+.wave i{flex:1;border-radius:4px;background:var(--line);transition:background .3s}
+.wave i.done{background:var(--acc)}.wave i.now{background:var(--amber)}
+.meta{display:flex;justify-content:space-between;color:var(--mute);font-size:.85rem;margin-bottom:6px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px 22px}
+.btn{font:500 1rem "IBM Plex Sans",sans-serif;background:var(--ink);color:var(--bg);border:0;border-radius:10px;padding:13px 22px;cursor:pointer;margin-top:10px}
+.btn.sm{padding:8px 16px;margin:0}
+button:focus-visible,input:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 10px}
+.tab{font:500 .92rem "IBM Plex Sans",sans-serif;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:7px 14px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--acc);border-color:var(--acc);color:var(--bg)}
+.panel{background:var(--bg);border-radius:10px;padding:14px 16px;min-height:96px;margin-bottom:14px}.panel p{margin:0}
+.lab{background:var(--bg);border-radius:10px;padding:16px;margin:12px 0 18px;text-align:center}
+.lab canvas{width:min(240px,100%);image-rendering:pixelated;border-radius:8px;display:block;margin:0 auto 12px}
+.lab input{width:100%;accent-color:var(--acc)}.lab output{display:block;font-size:.9rem;color:var(--mute);margin:6px 0 10px}
+.opts{display:grid;gap:10px;margin:16px 0}
+.opt{text-align:left;font:400 1rem/1.4 "IBM Plex Sans",sans-serif;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:10px;padding:13px 15px;cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--acc)}
+.opt.ok{background:var(--accbg);border-color:var(--acc)}.opt.bad{background:var(--redbg);border-color:var(--red)}
+.opt:disabled{cursor:default;color:var(--ink);opacity:1}
+.fb{border-left:4px solid var(--acc);padding:4px 0 4px 14px;margin:10px 0}.fb.bad{border-color:var(--red)}
+.tag{display:inline-block;background:var(--accbg);color:var(--acc);font-weight:500;font-size:.85rem;border-radius:6px;padding:2px 9px;margin-bottom:12px}
+.tag.q{background:var(--amber);color:#1D1B3A}
+.big{font:800 4rem/1 "Bricolage Grotesque",sans-serif;color:var(--acc)}
+.end{text-align:center}.end .wave{justify-content:center}.end .wave i{animation:pop .6s both;background:var(--acc)}
+@keyframes pop{from{transform:scaleY(.1)}to{transform:scaleY(1)}}
+@media (prefers-reduced-motion:reduce){.end .wave i{animation:none}}
+a{color:var(--acc)}
+.term{border-bottom:1.5px dotted var(--acc);cursor:help}
+.term:focus-visible{outline:2px solid var(--amber);outline-offset:2px;border-radius:2px}
+#tip{position:fixed;left:0;top:0;display:none;width:max-content;max-width:min(270px,calc(100vw - 20px));z-index:50;pointer-events:none;background:var(--ink);color:var(--bg);font-size:.88rem;line-height:1.45;padding:9px 12px;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+footer{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);color:var(--mute);font-size:.88rem;text-align:center}
+</style>
+</head>
+<body>
+<main>
+<div class="meta"><span id="lbl"></span><span id="score"></span></div>
+<div class="wave" id="wave" aria-hidden="true"></div>
+<div id="stage"></div>
+<div id="tip" role="tooltip"></div>
+<footer>Content based on <a href="https://www.ibm.com/think/topics/diffusion-models" target="_blank" rel="noopener">“What are diffusion models?”</a> by Dave Bergmann and Cole Stryker, IBM Think.</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const TABS={
+ hist:[["Thermodynamics, 2015","Sohl-Dickstein and colleagues borrowed Langevin dynamics from physics, which models moving molecules. Their premise: turn data into noise, so you can learn to turn noise back into data."],["Score-based, 2019","Song and Ermon independently built a noise conditional score network. They found that perturbing data with Gaussian noise helped, and arrived at the same techniques as the 2015 work."],["DDPM, 2020","Ho and colleagues used the 2015 approach to make high-quality images, matching the GANs that were then state of the art. A 2021 follow-up, “Diffusion Models Beat GANs on Image Synthesis”, made diffusion the new leader."]],
+ st:[["1. Forward","A training image is gradually turned into pure noise, usually Gaussian, by adding a little noise at each step."],["2. Reverse","The model learns to undo each of those steps. This is where the actual machine learning happens."],["3. Generate","The trained model starts from random noise and applies what it learned to denoise it into a brand-new, high-quality image."]],
+ gd:[["Classifier-guided","A separate classifier learns an embedding for each category, and that embedding steers the diffusion at every step. The diffusion model needs no extra training, but can only follow categories the classifier knows."],["Classifier-free","No separate classifier. Instead, a two-stage model is trained for conditional guidance: a text encoder like CLIP embeds the prompt, then the diffusion model uses it. It costs more training, but can guide on unseen categories (zero-shot)."]]
+};
+const tabs=id=>`<div class="tabs" role="tablist" data-t="${id}">${TABS[id].map((t,i)=>`<button class="tab" role="tab" aria-selected="${i==0}" data-i="${i}">${t[0]}</button>`).join('')}</div><div class="panel" id="p-${id}"><p>${TABS[id][0][1]}</p></div>`;
+const lab=`<div class="lab"><canvas id="cv" width="16" height="16" aria-label="A ring and square that dissolve into noise as the slider moves"></canvas><input type="range" id="sl" min="0" max="1000" step="10" value="0" aria-label="Diffusion step"><output id="ro"></output><button class="btn sm" id="dn">Denoise</button></div>`;
+function noiseDemo(){
+ const c=$('cv'),x=c.getContext('2d'),N=16,s=$('sl');let seed=7,id;
+ const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647,g=()=>Math.sqrt(-2*Math.log(rnd()||1e-9))*Math.cos(6.2832*rnd());
+ const e=[],x0=[];
+ for(let i=0;i<N*N;i++){const px=i%N-7.5,py=((i/N)|0)-7.5,d=Math.hypot(px,py);x0.push(Math.abs(d-5.5)<1.4||(Math.abs(px)<1.5&&Math.abs(py)<1.5)?1:-1);e.push(g())}
+ const ab=[1];let p=1;for(let t=1;t<=1000;t++){p*=1-(1e-4+(0.02-1e-4)*(t-1)/999);ab.push(p)}
+ function draw(){const t=+s.value,a=ab[t];for(let i=0;i<N*N;i++){const v=Math.sqrt(a)*x0[i]+Math.sqrt(1-a)*e[i],k=Math.round(255*Math.min(1,Math.max(0,(v+1.5)/3)));x.fillStyle=`rgb(${k},${k},${k})`;x.fillRect(i%N,(i/N)|0,1,1)}
+  $('ro').textContent=`Step ${t} of 1000: ${Math.round(a*100)}% of the original signal left`}
+ s.oninput=draw;draw();
+ $('dn').onclick=()=>{clearInterval(id);id=setInterval(()=>{if(!s.isConnected||+s.value<=0){clearInterval(id);return}s.value=Math.max(0,+s.value-20);draw()},30)}
+}
+const S=[
+{t:"l",h:"What are diffusion models?",b:()=>`<p style="color:var(--mute);font-size:.9rem">Tip: hover or tap any dotted-underlined term for a quick definition.</p><p>Diffusion models are generative models best known for creating images. They’re neural networks trained to bury samples in random noise a little at a time, then to run that process backwards so they can produce new, high-quality images.</p><p>They sit behind text-to-image tools such as Stable Diffusion, DALL-E, Midjourney and Imagen, and they improved on the quality and stability of earlier approaches like VAEs, GANs and autoregressive models.</p><h3>The ink-drop intuition</h3><p>Picture pixels as molecules of ink spreading through a glass of water. Given time, the ink disperses evenly. Given enough noise, an image turns into something like TV static. If a model learns to reverse that spread, it can start from pure static and denoise its way to a picture that never existed.</p><h3>Beyond images</h3><p>The same idea works for inpainting, super-resolution, audio, and even drug and molecule design. This course sticks to images.</p>`},
+{t:"q",q:"What is the core idea behind a diffusion model?",o:["Corrupt data with noise step by step, then learn to reverse the process","Compress images into short codes and decode them","Make two networks compete until one fools the other","Predict each pixel from the pixels before it"],e:"Diffusion models add noise gradually, then learn to reverse it. Competing networks describe GANs, and pixel-by-pixel prediction describes autoregressive models."},
+{t:"q",q:"In the ink-drop analogy, what does a fully diffused image resemble?",o:["TV static","A sharper copy of the original","A blank white page","A smaller thumbnail"],e:"Just as ink eventually spreads evenly, repeated random noise turns an image into static."},
+{t:"l",h:"History: two roads to one idea",b:()=>`<p>The process now called diffusion was discovered twice, independently, through different mathematics. Explore each milestone:</p>${tabs('hist')}<p>Later work borrowed from both paths. DDPMs, rather than score-based models, remain the dominant approach, and the 2022 paper on latent diffusion brought big gains in efficiency and cost.</p>`},
+{t:"q",q:"Which 2020 work showed diffusion could produce images competitive with GANs?",o:["Ho et al.’s DDPM paper","Sohl-Dickstein’s 2015 thermodynamics paper","Song and Ermon’s score network","The U-Net segmentation paper"],e:"Ho et al. used the 2015 approach with score matching to reach GAN-level quality, and a 2021 paper then established diffusion as the new leader."},
+{t:"l",h:"Probability versus score",b:()=>`<p>Many generative models learn a <b>probability density</b>: how likely each value is, so they can generate samples that fit the training data. All the probabilities must sum to 1, which usually needs a <b>normalizing constant</b>. Computing one for every possible value is often intractable.</p><p>Score-based models sidestep this. They model the gradient of the log of the density, called the <b>score function</b>, which needs no normalizing constant. They are trained by score matching, so their gradient matches the training data’s.</p><p>A bonus: they place few restrictions on the model architecture. Song and Ermon used a U-Net and generated samples with Langevin dynamics.</p>`},
+{t:"q",q:"Why are score functions attractive compared with plain probability densities?",o:["They don’t need an intractable normalizing constant","They need no training data","They only work with one fixed architecture","They make every probability exactly zero"],e:"The score is a gradient of the log density, so it never needs to normalize total probability to 1."},
+{t:"l",h:"How diffusion models work: three stages",b:()=>`${tabs('st')}<p>Why go step by step? Turning pure noise straight into a coherent image is extremely hard. Turning a noisy image into a <em>slightly less</em> noisy one is easy. So the reverse process is built as many small, simple steps, from a simple distribution (Gaussian noise) toward a complex one (a real image).</p>`},
+{t:"q",q:"Why does the model denoise in small steps?",o:["Making an image slightly less noisy is easy, while noise to image in one go is very hard","Small steps use more memory, which helps accuracy","The noise changes color at each step","Images can only be stored in increments"],e:"Many tiny, easy transformations add up to a hard one."},
+{t:"l",h:"Forward diffusion",b:()=>`<p>The forward process turns a clean image into noise by repeatedly injecting Gaussian noise. It’s a <b>Markov chain</b>: the state at step t depends only on step t−1. The original image is x₀, and after enough steps x<sub>T</sub> is pure noise. In a standard DDPM this stage involves no machine learning.</p><h3>Try it</h3><p>Drag the slider to add noise, then press Denoise to watch it run backwards. Training teaches a network to do that reversal.</p>${lab}<h3>The variance schedule</h3><p>How much noise is added each step is set by β, a value between 0 and 1 that grows over the steps. This <b>variance schedule</b> is usually a hand-set hyperparameter. The DDPM paper used a linear schedule over 1,000 steps. Later work found cosine schedules, or learned ones, can do better.</p><p>Noise strength matters. Larger noise helps the model learn rare, low-density concepts but can over-corrupt data. Smaller noise preserves the data but handles rare concepts poorly. So models train with multiple scales of noise.</p>`,i:noiseDemo},
+{t:"q",q:"In the forward Markov chain, what does the image at step t depend on?",o:["Only the image at step t−1","Every earlier step equally","Only the final noise","The text prompt"],e:"That’s the defining property of a Markov chain: each state is influenced only by the one immediately before it."},
+{t:"q",q:"What does the variance schedule control?",o:["How much noise is added at each step","How many images are in the training set","The final image resolution","Which words the prompt contains"],e:"β sets the variance of the noise at each step, and the schedule says how it changes over time."},
+{t:"l",h:"The reparameterization trick",b:()=>`<p>Adding noise one step at a time is slow when a dataset holds millions of images. The fix is to rewrite 1−β as a new parameter α, then multiply the α values together to get a cumulative value ᾱ. It tracks the <b>signal-to-noise ratio</b>: how much of the original image survives at step t.</p><p>Early on, ᾱ is close to 1 and most of the image remains. By the final step it approaches 0 and the image is all noise. The noisy image becomes a weighted mix of the original and a noise sample, so you can jump straight to <em>any</em> step without simulating all the ones before it.</p><p>That’s exactly how the slider above works: one calculation per position.</p>`},
+{t:"q",q:"What does the reparameterization trick allow?",o:["Computing the noisy image at any timestep directly","Removing all noise in one step","Training without a loss function","Changing the image’s size"],e:"Because ᾱ summarizes all earlier steps, x at any timestep can be computed directly."},
+{t:"l",h:"Reverse diffusion and training",b:()=>`<p>The reverse process is where learning happens. Computing the exact reverse step is intractable, so a neural network approximates it.</p><p>Here’s the key twist. The network doesn’t predict the previous image directly. It predicts the <em>entire noise</em> in the current image, then removes a fraction of it, guided by the variance schedule. Since the noise is derived from the original image’s structure, learning to predict it also teaches the model that structure.</p><h3>The loss function</h3><p>Like VAEs, diffusion models are trained by maximizing a variational lower bound (the ELBO), built from several loss terms that use KL divergence to compare forward and reverse steps. It simplifies to the <b>mean-squared error</b> between the noise the model predicts and the true noise added. Backpropagation and gradient descent then adjust the weights.</p>`},
+{t:"q",q:"What does the network predict at each reverse step?",o:["The noise present in the current image","The final caption","The next pixel to draw","The image category"],e:"It estimates the entire noise in the image, then subtracts a fraction of it."},
+{t:"q",q:"The diffusion training objective ultimately simplifies to what?",o:["Mean-squared error between predicted and true noise","The number of steps taken","Classifying noisy versus clean images","Maximizing image brightness"],e:"This is why the model’s output is a noise prediction rather than a finished image."},
+{t:"l",h:"Generating new images",b:()=>`<p>To generate, the trained model starts from random noise and denoises it step by step. A small amount of randomness in sampling means it produces <em>new</em> images that resemble the training data instead of copying it.</p><p>The number of generation steps doesn’t have to match the forward process, because the model predicts the entire noise each time. Fewer steps run faster and cost less, with a possible loss of fine detail. More steps usually improve accuracy but take longer and cost more.</p>`},
+{t:"q",q:"What’s the trade-off of using fewer generation steps?",o:["Faster and cheaper, but possibly less fine detail","Slower but sharper","The model ignores the prompt","Training must be repeated"],e:"Fewer steps cut speed and cost, while more steps generally improve accuracy."},
+{t:"l",h:"Guided diffusion",b:()=>`<p>A plain diffusion model produces random variations of its training data. Most real uses need control. <b>Guided diffusion</b> conditions the output on guidance such as a text prompt like “a giraffe wearing a top hat”. Typically a language model interprets the prompt, an approach first shown in Google’s Imagen paper.</p><p>Where a standard model predicts the unconditional score, a guided model predicts the conditional score: how likely an image is, given that it must fit category y. Two main methods exist:</p>${tabs('gd')}`},
+{t:"q",q:"Which statement about classifier-free guidance is true?",o:["It trains a conditional model and can guide on unseen categories","It needs a separate classifier at generation time","It only works for categories in a fixed list","It ignores the prompt"],e:"Classifier-free guidance costs extra training but needs no separate classifier and enables zero-shot guidance."},
+{t:"l",h:"Latent diffusion models",b:()=>`<p>Conventional diffusion models are slow and computationally expensive. Latent diffusion models, starting with Stable Diffusion, cut those costs.</p><p>Instead of diffusing in high-dimensional <b>pixel space</b>, the image is first encoded into a lower-dimensional <b>latent space</b> by a VAE-style encoder. A standard diffusion model, typically a U-Net, works there. Because the data is smaller, the result is then passed through a decoder that upsamples it to the final image size.</p>`},
+{t:"q",q:"How do latent diffusion models reduce cost?",o:["They diffuse in a smaller latent space, then decode back up to an image","They train on fewer images","They skip the denoising steps","They only generate tiny images"],e:"Working on compressed representations is cheaper, and a decoder restores full image size at the end."}
+];
+const GL=[
+["signal-to-noise ratio","How much meaningful signal there is compared with random noise."],
+["reparameterization( trick)?","Rewriting a formula so it’s easier to compute. Here it lets you jump to any noise level directly."],
+["variational lower bound","A tractable stand-in for a hard probability goal. Maximizing it trains the model. Also called ELBO."],
+["mean-squared error","The average of squared differences between predictions and true values."],
+["variance schedule","The plan for how much noise is added at each forward step."],
+["normalizing constant","A value that scales probabilities so they total exactly 1."],
+["probability density","How likely different values are to occur."],
+["generative models?","A model that learns patterns in training data so it can create new, similar data."],
+["latent space","A compressed, lower-dimensional representation of data."],
+["pixel space","The raw image itself, measured pixel by pixel."],
+["Markov chain","A sequence where each state depends only on the one just before it."],
+["Langevin dynamics","A physics method for modeling how molecules move, reused here to generate samples."],
+["autoregressive models","Models that generate output one piece at a time, each based on earlier pieces."],
+["super-resolution","Sharpening a low-resolution image into a higher-resolution one."],
+["KL divergence","A measure of how different two probability distributions are."],
+["gradient descent","An optimization method that nudges weights downhill to reduce loss."],
+["score functions?","The gradient of the log probability density. It points toward more likely data."],
+["DDPMs?","Denoising diffusion probabilistic models: the dominant style of diffusion model."],
+["VAEs?","Variational autoencoders: networks that compress data to a latent space and decode it back."],
+["GANs?","Generative adversarial networks: two networks compete, one generating and one judging."],
+["U-Net","A network shape first built for image segmentation, widely used for denoising."],
+["ELBO","Evidence lower bound, another name for the variational lower bound."],
+["LLM","Large language model, the kind of AI behind chatbots."],
+["CLIP","A model that turns text and images into matching embeddings."],
+["zero-shot","Handling categories the model never saw explicitly in training."],
+["embeddings?","A list of numbers that captures the meaning of text or an image."],
+["inpainting","Filling in missing or masked parts of an image."],
+["intractable","Solvable in principle, but needing impractically huge computation."],
+["hyperparameter","A setting chosen by people before training, not learned by the model."],
+["timesteps?","One step in the sequence of noising or denoising."],
+["gradient","The direction and rate in which a value changes most quickly."],
+["encoder","Part of a network that compresses input into a latent representation."],
+["decoder","Part of a network that expands a latent representation back to full size."],
+["Gaussian","A bell-curve distribution, also called a normal distribution."],
+["denois(?:e|ing)","Removing noise from data."],
+["noise","Random variation added to data, like static on a TV."]
+];
+function glossify(root){
+ GL.forEach(([p,d])=>{
+  const re=new RegExp('\\b('+p+')\\b','i');
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentElement.closest('button,h1,h2,h3,.term,.tag,code,.meta,output')?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
+  let n;
+  while(n=w.nextNode()){
+   const m=re.exec(n.nodeValue);
+   if(m){const r=n.splitText(m.index);r.splitText(m[0].length);const s=document.createElement('span');s.className='term';s.tabIndex=0;s.setAttribute('role','button');s.dataset.d=d;s.textContent=r.nodeValue;r.replaceWith(s);break}
+  }
+ });
+}
+const tip=$('tip');
+function showTip(el){tip.textContent=el.dataset.d;tip.style.display='block';const r=el.getBoundingClientRect(),t=tip.getBoundingClientRect();let x=r.left+r.width/2-t.width/2;x=Math.max(10,Math.min(x,innerWidth-t.width-10));let y=r.top-t.height-8;if(y<10)y=r.bottom+8;tip.style.left=x+'px';tip.style.top=y+'px'}
+function hideTip(){tip.style.display='none'}
+document.addEventListener('mouseover',e=>{const t=e.target.closest('.term');if(t)showTip(t)});
+document.addEventListener('mouseout',e=>{if(e.target.closest('.term'))hideTip()});
+document.addEventListener('focusin',e=>{const t=e.target.closest('.term');if(t)showTip(t)});
+document.addEventListener('focusout',hideTip);
+document.addEventListener('click',e=>{const t=e.target.closest('.term');t?showTip(t):hideTip()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')hideTip()});
+document.addEventListener('scroll',hideTip,true);
+
+const TOTAL=S.filter(s=>s.t=="q").length;
+let pos=0,score=0,done=0;
+const wave=$('wave'),stage=$('stage');
+const H=Array.from({length:TOTAL},(_,i)=>26+Math.round(28*Math.abs(Math.sin(i*1.7+1))));
+wave.innerHTML=H.map(h=>`<i style="height:${h}px"></i>`).join('');
+const bars=()=>[...wave.children].forEach((b,i)=>{b.className=i<done?'done':i==done&&S[pos]&&S[pos].t=='q'?'now':''});
+const toTop=()=>window.scrollTo({top:0});
+function render(){
+ const s=S[pos];bars();hideTip();
+ $('score').textContent=`${score}/${done} correct`;
+ if(!s)return finish();
+ if(s.t=="l"){
+  $('lbl').textContent='Lesson';
+  stage.innerHTML=`<div class="card"><span class="tag">Learn</span><h2>${s.h}</h2>${s.b()}<button class="btn" id="next">${S[pos+1]&&S[pos+1].t=='q'?'Next':'Continue'}</button></div>`;
+  $('next').onclick=()=>{pos++;render();toTop()};
+  glossify(stage);
+  if(s.i)s.i();
+  stage.querySelectorAll('[data-t]').forEach(g=>g.onclick=e=>{const b=e.target.closest('.tab');if(!b)return;g.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===b));const p=$('p-'+g.dataset.t);p.innerHTML='<p>'+TABS[g.dataset.t][b.dataset.i][1]+'</p>';glossify(p)});
+ }else{
+  $('lbl').textContent=`Checkpoint ${done+1} of ${TOTAL}`;
+  const ord=[...s.o.keys()].sort(()=>Math.random()-.5);
+  stage.innerHTML=`<div class="card"><span class="tag q">Checkpoint</span><h2 style="font-size:1.35rem">${s.q}</h2><div class="opts">${ord.map(i=>`<button class="opt" data-i="${i}">${s.o[i]}</button>`).join('')}</div><div id="fb"></div></div>`;
+  stage.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+   const ok=+b.dataset.i==0;
+   stage.querySelectorAll('.opt').forEach(x=>{x.disabled=true;if(+x.dataset.i==0)x.classList.add('ok')});
+   if(!ok)b.classList.add('bad');
+   if(ok)score++;done++;bars();$('score').textContent=`${score}/${done} correct`;
+   $('fb').innerHTML=`<div class="fb ${ok?'':'bad'}"><b>${ok?'Correct.':'Not quite.'}</b> ${s.e}</div><button class="btn" id="next">${pos==S.length-1?'See my results':'Continue'}</button>`;
+   $('next').onclick=()=>{pos++;render();toTop()};
+  });
+ }
+}
+function finish(){
+ done=TOTAL;[...wave.children].forEach(b=>b.className='done');
+ $('lbl').textContent='Complete';
+ const pct=Math.round(score/TOTAL*100);
+ const msg=score==TOTAL?'A perfect score. You can explain diffusion models from noise to image.':pct>=75?'Excellent work. You have a solid grasp of how diffusion models work.':pct>=50?'Well done. Revisit the lessons to lock in the details.':'You’ve finished the course. Restart to strengthen the fundamentals.';
+ stage.innerHTML=`<div class="card end"><div class="wave" aria-hidden="true">${H.map((h,i)=>`<i style="height:${h}px;animation-delay:${i*50}ms"></i>`).join('')}</div><h1>Congratulations!</h1><p style="margin:0 auto 14px">You’ve completed <b>How diffusion models work</b>.</p><div class="big">${score}/${TOTAL}</div><p style="margin:8px auto 18px">${pct}% correct. ${msg}</p><button class="btn" id="re">Start again</button></div>`;
+ $('re').onclick=()=>{pos=0;score=0;done=0;render();toTop()};
+ $('score').textContent=`${score}/${TOTAL} correct`;
+}
+render();
+</script>
+</body>
+</html>
