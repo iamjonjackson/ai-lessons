@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How neural text to speech works</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+:root{--bg:#EEF2F5;--surface:#fff;--ink:#14213D;--mute:#5B6678;--line:#D5DCE4;--teal:#0B8F8A;--tealbg:#DDF3F1;--amber:#E8962A;--red:#B83A4B;--redbg:#F9E3E6;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F1726;--surface:#17223A;--ink:#EAF0F7;--mute:#9AA8BD;--line:#2B3957;--teal:#3CC7C0;--tealbg:#103A3F;--amber:#F2A33A;--red:#F08A98;--redbg:#3C1F2A;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F1726;--surface:#17223A;--ink:#EAF0F7;--mute:#9AA8BD;--line:#2B3957;--teal:#3CC7C0;--tealbg:#103A3F;--amber:#F2A33A;--red:#F08A98;--redbg:#3C1F2A;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.6 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:680px;margin:0 auto;padding:20px 18px 60px}
+h1,h2{font-family:"Bricolage Grotesque",system-ui,sans-serif;line-height:1.15;margin:0 0 14px}
+h1{font-size:2.3rem;font-weight:800}h2{font-size:1.6rem;font-weight:800}
+h3{font-family:"Bricolage Grotesque",sans-serif;font-size:1.05rem;margin:22px 0 6px}
+p{margin:0 0 14px;max-width:62ch}
+.wave{display:flex;align-items:center;gap:6px;height:56px;margin:4px 0 22px}
+.wave i{flex:1;border-radius:4px;background:var(--line);transition:background .3s,transform .3s}
+.wave i.done{background:var(--teal)}.wave i.now{background:var(--amber)}
+.meta{display:flex;justify-content:space-between;color:var(--mute);font-size:.85rem;margin-bottom:6px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px 22px}
+.btn{font:500 1rem "IBM Plex Sans",sans-serif;background:var(--ink);color:var(--bg);border:0;border-radius:10px;padding:13px 22px;cursor:pointer;margin-top:10px}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 10px}
+.tab{font:500 .92rem "IBM Plex Sans",sans-serif;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:7px 14px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--teal);border-color:var(--teal);color:#fff}
+.panel{background:var(--bg);border-radius:10px;padding:14px 16px;min-height:96px}
+.panel p{margin:0}
+.words{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.word{font:500 1.02rem "IBM Plex Sans",sans-serif;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:6px 10px;cursor:pointer}
+.word[aria-pressed="true"]{background:var(--amber);border-color:var(--amber);color:#14213D}
+.opts{display:grid;gap:10px;margin:16px 0}
+.opt{text-align:left;font:400 1rem/1.4 "IBM Plex Sans",sans-serif;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:10px;padding:13px 15px;cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--teal)}
+.opt.ok{background:var(--tealbg);border-color:var(--teal)}
+.opt.bad{background:var(--redbg);border-color:var(--red)}
+.opt:disabled{cursor:default;color:var(--ink);opacity:1}
+.fb{border-left:4px solid var(--teal);padding:4px 0 4px 14px;margin:10px 0}
+.fb.bad{border-color:var(--red)}
+.tag{display:inline-block;background:var(--tealbg);color:var(--teal);font-weight:500;font-size:.85rem;border-radius:6px;padding:2px 9px;margin-bottom:12px}
+.tag.q{background:var(--amber);color:#14213D}
+.big{font:800 4rem/1 "Bricolage Grotesque",sans-serif;color:var(--teal)}
+.end{text-align:center}.end .wave{justify-content:center}
+.end .wave i{animation:pop .6s both;background:var(--teal)}
+@keyframes pop{from{transform:scaleY(.1)}to{transform:scaleY(1)}}
+@media (prefers-reduced-motion:reduce){.end .wave i{animation:none}}
+a{color:var(--teal)}
+.term{border-bottom:1.5px dotted var(--teal);cursor:help}
+.term:focus-visible{outline:2px solid var(--amber);outline-offset:2px;border-radius:2px}
+#tip{position:fixed;left:0;top:0;display:none;width:max-content;max-width:min(270px,calc(100vw - 20px));z-index:50;pointer-events:none;background:var(--ink);color:var(--bg);font-size:.88rem;line-height:1.45;padding:9px 12px;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+footer{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);color:var(--mute);font-size:.88rem;text-align:center}
+</style>
+</head>
+<body>
+<main>
+<div class="meta"><span id="lbl"></span><span id="score"></span></div>
+<div class="wave" id="wave" aria-hidden="true"></div>
+<div id="stage"></div>
+<div id="tip" role="tooltip"></div>
+<footer>Content based on <a href="https://elevenlabs.io/blog/neural-text-to-speech-tts" target="_blank" rel="noopener">“Neural text to speech (TTS) explained: How AI voices work”</a> by Jack Limebear, ElevenLabs.</footer>
+</main>
+<script>
+const H=[34,52,26,48,40,56,30,50,36,44];
+const tabs=(id,items)=>`<div class="tabs" role="tablist" data-t="${id}">${items.map((t,i)=>`<button class="tab" role="tab" aria-selected="${i==0}" data-i="${i}">${t[0]}</button>`).join('')}</div><div class="panel" id="p-${id}"><p>${items[0][1]}</p></div>`;
+const TABS={
+ stages:[["Text analysis","Cleans up the text, expands abbreviations, numbers and dates into spoken words, then predicts which words need emphasis."],["Acoustic model","Takes phonemes and predicts how they should sound, producing a mel spectrogram (a map of frequencies over time)."],["Vocoder","Turns the spectrogram into a real waveform you can play. Fast vocoders like HiFi-GAN made real-time speech possible."]],
+ cmp:[["Concatenative","Stitches together tiny recorded fragments. Individual words sound human, but the seams make the rhythm choppy. New voices need a full studio re-recording."],["Parametric","Uses a statistical model of speech instead of recordings. It’s small and flexible, but sounds smooth yet muffled and buzzy."],["Neural","A deep network generates the whole waveform. Natural prosody, broad emotional range, and new voices cloned from minutes of audio."]]
+};
+const STRESS={"I":"Someone else said it, not me.","didn’t":"I deny saying it at all.","say":"I may have implied it, just never said it.","he":"Someone else stole the money.","stole":"He did something else with it, maybe borrowed it.","the":"He stole some other money.","money":"He stole something else, not money."};
+const words=()=>`<div class="words" id="words">${Object.keys(STRESS).map(w=>`<button class="word" aria-pressed="false" data-w="${w}">${w}</button>`).join('')}</div><div class="panel" id="stressOut"><p>Tap a word to stress it and see how the meaning changes.</p></div>`;
+
+const S=[
+{t:"l",h:"What is neural text to speech?",b:()=>`<p style="color:var(--mute);font-size:.9rem">Tip: hover or tap any dotted-underlined term for a quick definition.</p><p>Neural TTS uses deep neural networks to generate human-sounding speech. These networks are layers of linked processing units, named for their loose resemblance to the brain.</p><p>Older systems depended on handwritten rules and recorded fragments. A neural model works out its own rules from data, learning for itself where to pause and which word to stress.</p><h3>Why it matters</h3><p>That learned sense of <b>prosody</b> (rhythm, stress and intonation) plus emotion is what separates neural voices from robotic ones. The market passed $4.8 billion in 2026, growing about 22% a year.</p>`},
+{t:"q",q:"What best describes how a neural TTS model differs from earlier systems?",o:["It plays back longer recorded clips","It derives its own rules by learning from data","It relies on more handwritten pronunciation rules","It only works in English"],a:1,e:"Earlier systems relied on handwritten rules and recorded audio. A neural model learns its own rules from context."},
+{t:"l",h:"Step 1: Text analysis",b:()=>`<p>Written text is ambiguous. Try it: stress a different word in this sentence and the meaning shifts.</p><p><b>“I didn’t say he stole the money.”</b></p>${words()}<p style="margin-top:14px">Text analysis resolves this kind of ambiguity <em>before</em> any audio exists. It expands abbreviations, turns dates and numbers into spoken forms, picks the right pronunciation for homographs like “read” or “bass”, and predicts which words carry weight.</p><p>The normalized text is then converted into phonemes, the individual sounds, through <b>grapheme-to-phoneme conversion</b>. That keeps pronunciation stable even in a language like English.</p>`},
+{t:"q",q:"In “I didn’t say <i>he</i> stole the money,” stressing “he” suggests what?",o:["The money was never stolen","Someone else stole the money","Someone else said it","The speaker is whispering"],a:1,e:"Stressing “he” implies someone other than him took the money. Stressing “I” would suggest someone else said it."},
+{t:"q",q:"What does grapheme-to-phoneme conversion do?",o:["Turns normalized text into individual sounds","Turns a spectrogram into a waveform","Clones a speaker’s voice","Compresses audio into an MP3"],a:0,e:"Graphemes are written letters and phonemes are sounds. This step maps one to the other so the final audio is correct."},
+{t:"l",h:"Steps 2 and 3: Acoustic model and vocoder",b:()=>`<p>Explore the classic three-stage pipeline:</p>${tabs('stages',TABS.stages)}<h3>What the acoustic model predicts</h3><p><b>Timbre</b> is the texture that makes a voice recognizable. <b>Pitch</b> is the tone contour, such as the rise of a question. <b>Duration</b> is how long each phoneme is held, which sets pacing. Together they form prosody.</p><p>Tacotron 2 and FastSpeech are well-known acoustic architectures. Early vocoders such as WaveNet were too slow for production, until HiFi-GAN made them fast enough.</p>`},
+{t:"q",q:"Which set lists the three main dimensions of the acoustic layer?",o:["Latency, cost, language","Timbre, pitch, duration","Volume, bitrate, format","Grapheme, phoneme, vocoder"],a:1,e:"Timbre (voice texture), pitch (tone contour) and duration (phoneme length) combine to shape prosody."},
+{t:"q",q:"What is the vocoder’s job?",o:["Predict which words to stress","Expand abbreviations into words","Convert the acoustic representation into a playable waveform","Translate text between languages"],a:2,e:"A mel spectrogram describes speech but isn’t playable. The vocoder turns it into the waveform you hear."},
+{t:"l",h:"End-to-end and transformer models",b:()=>`<p>Newer systems collapse the pipeline. A transformer-based model, the same architecture behind large language models, maps text to audio in one end-to-end process.</p><p>A pipeline works a sentence at a time. A transformer can read the whole passage first, so it knows the same line should sound different in a comedy than in a drama.</p><p>Models like Eleven v4 also accept inline audio tags such as <code>[whispers]</code> or <code>[nervous]</code>, giving writers direct control over delivery.</p>`},
+{t:"q",q:"What advantage does a transformer-based end-to-end model have over a pipeline?",o:["It reads the entire passage to use wider context","It needs no training data","It only produces one voice","It skips the need for text"],a:0,e:"Seeing the whole passage lets it decide how a line should sound in context, rather than sentence by sentence."},
+{t:"l",h:"Neural vs. traditional TTS",b:()=>`<p>Before neural networks, there were two approaches. Compare all three:</p>${tabs('cmp',TABS.cmp)}<p style="margin-top:14px">Traditional systems still appear in legacy phone menus and screen readers, but neural synthesis has replaced them wherever voice quality matters.</p>`},
+{t:"q",q:"Why did concatenative TTS often sound choppy?",o:["The statistical model discarded fine detail","Stitched recorded fragments left audible seams","It was too fast to process","It used too many languages"],a:1,e:"It cut recordings into tiny fragments and joined them. The seams created a choppy, robotic cadence. Muffled sound is the parametric problem."},
+{t:"l",h:"Features and use cases",b:()=>`<h3>Key features</h3><p><b>Natural prosody</b> and <b>emotional expression</b> keep long listening comfortable. <b>Voice cloning</b> learns a speaker’s timbre and style from a short sample. <b>Multilingual reach</b> lets one voice identity carry across dozens of languages. <b>Real-time speed</b> means synthesis can outpace playback, and <b>scale</b> lets a voice narrate millions of words.</p><h3>Where it’s used</h3><p>Voice agents and customer support (the most demanding case, needing top quality and low latency), audiobooks, games with dynamic dialogue, and localization and dubbing that keeps the original speaker’s voice in a new language.</p>`},
+{t:"q",q:"Which feature lets a model learn a specific speaker’s timbre and style from a short sample?",o:["Grapheme-to-phoneme conversion","Batch synthesis","Voice cloning","Text normalization"],a:2,e:"Voice cloning keeps a consistent voice across all your deployments, and can carry it across languages."},
+{t:"l",h:"Integrating and choosing an API",b:()=>`<p>For developers, neural TTS is an API call away. Three patterns cover most apps:</p>${tabs('api',[["Batch","Send text, get a complete audio file. Good for articles, IVR prompts, audiobooks and videos."],["HTTP streaming","Audio chunks arrive as they’re generated, so playback starts before synthesis finishes. Good for long documents."],["WebSocket","A persistent connection takes text incrementally, such as tokens streaming from an LLM, and returns audio with the lowest latency. Built for conversational agents."]])}<h3>What to look for in a provider</h3><p>Audio quality (above all), latency measured as time to first byte, documented streaming support, language and voice coverage, expressive control, speaker similarity on long passages, licensing and ethics, good docs, and a pricing model you’ve tested against your real volume.</p>`},
+{t:"q",q:"A voice agent receives text token by token from an LLM. Which integration pattern fits best?",o:["Batch synthesis","Downloading a finished audio file","WebSocket streaming","Manual studio recording"],a:2,e:"A persistent WebSocket accepts text incrementally and returns audio with the lowest possible latency."},
+{t:"q",q:"When evaluating a TTS API, what does the article recommend for judging audio quality?",o:["Trust the entry price","Run blind listening tests, especially on long-form narration","Pick whichever has the shortest docs","Only test a single short sentence"],a:1,e:"Long-form narration is where weaknesses are most likely to show, so listen blind before choosing."}
+];
+const TOTAL=S.filter(s=>s.t=="q").length;
+let pos=0,score=0,done=0;
+const $=id=>document.getElementById(id);
+const GL=[
+["grapheme-to-phoneme( conversion)?","Mapping written letters (graphemes) to the sounds (phonemes) used to pronounce them."],
+["mel spectrogram","A map of audio frequencies over time, scaled to match human hearing. It describes speech but can’t be played directly."],
+["time to first byte","How long you wait before the first piece of audio arrives. A key latency measure."],
+["large language models","The AI systems behind modern chatbots. They’re built on the transformer architecture."],
+["acoustic model","The neural core of the classic pipeline. It predicts how phonemes should sound."],
+["voice cloning","Learning a specific person’s voice from a short audio sample so new text can be spoken in it."],
+["HTTP streaming","The server sends audio in chunks as it’s generated, so playback can start early."],
+["end-to-end","One model handles the whole job, from text straight to audio, with no separate stages."],
+["audio tags","Instructions written inline in a script, like [whispers], that steer how a line is delivered."],
+["neural networks?","Software made of layers of connected units that learn patterns from data, loosely inspired by the brain."],
+["transformer","A neural network design that weighs relationships across a whole passage at once. It’s the architecture behind modern LLMs."],
+["homographs","Words spelled the same but pronounced differently, such as “read” or “lead”."],
+["phonemes?","The smallest units of sound in a language, like the “k” sound in “cat”."],
+["Tacotron 2","A neural acoustic model that turns phonemes into a mel spectrogram."],
+["FastSpeech","A fast neural acoustic model that turns phonemes into a mel spectrogram."],
+["HiFi-GAN","A fast neural vocoder that made real-time speech practical."],
+["WaveNet","An early, high-quality neural vocoder from DeepMind. It was too slow for most production use."],
+["WebSocket","A persistent two-way connection between app and server, ideal for streaming text in and audio out."],
+["prosody","The rhythm, stress and intonation of speech: how something is said, beyond the words."],
+["vocoder","The final network in the pipeline. It converts the acoustic representation into a playable waveform."],
+["timbre","The texture of a voice that makes it recognizable as a particular speaker."],
+["pitch","How high or low the voice is, including its rise and fall across a sentence."],
+["latency","The delay between sending text and hearing audio. Lower is better for live conversation."],
+["tokens","Small chunks of text, such as words or word pieces, that language models produce one at a time."],
+["LLM","Large language model, the kind of AI behind chatbots."],
+["IVR","Interactive voice response: the automated phone menus that say “press 1 for…”."],
+["TTS","Text to speech: technology that turns written text into spoken audio."],
+["API","Application programming interface: a way for your code to request a service, such as speech, over the internet."]
+];
+function glossify(root){
+ GL.forEach(([p,d])=>{
+  const re=new RegExp('\\b('+p+')\\b','i');
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentElement.closest('button,h1,h2,h3,.term,.tag,code,.meta')?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
+  let n;
+  while(n=w.nextNode()){
+   const m=re.exec(n.nodeValue);
+   if(m){const r=n.splitText(m.index);r.splitText(m[0].length);const s=document.createElement('span');s.className='term';s.tabIndex=0;s.setAttribute('role','button');s.dataset.d=d;s.textContent=r.nodeValue;r.replaceWith(s);break}
+  }
+ });
+}
+const tip=$('tip');
+function showTip(el){tip.textContent=el.dataset.d;tip.style.display='block';const r=el.getBoundingClientRect(),t=tip.getBoundingClientRect();let x=r.left+r.width/2-t.width/2;x=Math.max(10,Math.min(x,innerWidth-t.width-10));let y=r.top-t.height-8;if(y<10)y=r.bottom+8;tip.style.left=x+'px';tip.style.top=y+'px'}
+function hideTip(){tip.style.display='none'}
+document.addEventListener('mouseover',e=>{const t=e.target.closest('.term');if(t)showTip(t)});
+document.addEventListener('mouseout',e=>{if(e.target.closest('.term'))hideTip()});
+document.addEventListener('focusin',e=>{const t=e.target.closest('.term');if(t)showTip(t)});
+document.addEventListener('focusout',hideTip);
+document.addEventListener('click',e=>{const t=e.target.closest('.term');t?showTip(t):hideTip()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')hideTip()});
+document.addEventListener('scroll',hideTip,true);
+const wave=$('wave'),stage=$('stage');
+wave.innerHTML=H.map(h=>`<i style="height:${h+0}px"></i>`).join('');
+function bars(){[...wave.children].forEach((b,i)=>{b.className=i<done?'done':i==done&&S[pos]&&S[pos].t=='q'?'now':''})}
+function toTop(){window.scrollTo({top:0})}
+function render(){
+ const s=S[pos];bars();
+ $('score').textContent=`${score}/${done} correct`;
+ if(!s){return finish()}
+ const nextBtn=`<button class="btn" id="next">${pos==S.length-1?'See my results':'Continue'}</button>`;
+ if(s.t=="l"){
+  $('lbl').textContent='Lesson';
+  stage.innerHTML=`<div class="card"><span class="tag">Learn</span><h2>${s.h}</h2>${s.b()}<button class="btn" id="next">${S[pos+1]&&S[pos+1].t=='q'?'Next':'Continue'}</button></div>`;
+  $('next').onclick=()=>{pos++;render();toTop()};
+  glossify(stage);hideTip();
+  stage.querySelectorAll('[data-t]').forEach(g=>g.onclick=e=>{const b=e.target.closest('.tab');if(!b)return;g.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===b));$('p-'+g.dataset.t).innerHTML='<p>'+(TABS[g.dataset.t]||apiTabs)[b.dataset.i][1]+'</p>';glossify($('p-'+g.dataset.t))});
+  const w=$('words');if(w)w.onclick=e=>{const b=e.target.closest('.word');if(!b)return;w.querySelectorAll('.word').forEach(x=>x.setAttribute('aria-pressed',x===b));$('stressOut').innerHTML=`<p><b>Stress “${b.dataset.w}”:</b> ${STRESS[b.dataset.w]}</p>`}
+ }else{
+  $('lbl').textContent=`Checkpoint ${done+1} of ${TOTAL}`;
+  stage.innerHTML=`<div class="card"><span class="tag q">Checkpoint</span><h2 style="font-size:1.35rem">${s.q}</h2><div class="opts">${s.o.map((o,i)=>`<button class="opt" data-i="${i}">${o}</button>`).join('')}</div><div id="fb"></div></div>`;
+  stage.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+   const i=+b.dataset.i,ok=i==s.a;
+   stage.querySelectorAll('.opt').forEach(x=>{x.disabled=true;if(+x.dataset.i==s.a)x.classList.add('ok')});
+   if(!ok)b.classList.add('bad');
+   if(ok)score++;done++;bars();$('score').textContent=`${score}/${done} correct`;
+   $('fb').innerHTML=`<div class="fb ${ok?'':'bad'}"><b>${ok?'Correct.':'Not quite.'}</b> ${s.e}</div>`+nextBtn.replace('</button>','</button>');
+   $('next').onclick=()=>{pos++;render();toTop()};
+  });
+ }
+}
+const apiTabs=S.find(s=>s.h&&s.h.startsWith('Integrating'))&&[["","Send text, get a complete audio file. Good for articles, IVR prompts, audiobooks and videos."],["","Audio chunks arrive as they’re generated, so playback starts before synthesis finishes. Good for long documents."],["","A persistent connection takes text incrementally, such as tokens streaming from an LLM, and returns audio with the lowest latency. Built for conversational agents."]];
+function finish(){
+ done=TOTAL;bars();[...wave.children].forEach(b=>b.className='done');
+ $('lbl').textContent='Complete';
+ const pct=Math.round(score/TOTAL*100);
+ const msg=score==TOTAL?'A perfect score. You understand how AI voices work from end to end.':score>=8?'Excellent work. You have a solid grasp of neural TTS.':score>=5?'Well done. Revisit the lessons to lock in the details.':'You’ve finished the course. Restart to strengthen the fundamentals.';
+ stage.innerHTML=`<div class="card end"><div class="wave" aria-hidden="true">${H.map((h,i)=>`<i style="height:${h}px;animation-delay:${i*60}ms"></i>`).join('')}</div><h1>Congratulations!</h1><p style="margin:0 auto 14px">You’ve completed <b>How neural text to speech works</b>.</p><div class="big">${score}/${TOTAL}</div><p style="margin:8px auto 18px">${pct}% correct. ${msg}</p><button class="btn" id="re">Start again</button><p style="margin-top:20px;font-size:.9rem;color:var(--mute)">Based on the ElevenLabs article <a href="https://elevenlabs.io/blog/neural-text-to-speech-tts" target="_blank" rel="noopener">Neural text to speech (TTS) explained</a>.</p></div>`;
+ $('re').onclick=()=>{pos=0;score=0;done=0;render();toTop()};
+ $('score').textContent=`${score}/${TOTAL} correct`;
+}
+render();
+</script>
+</body>
+</html>

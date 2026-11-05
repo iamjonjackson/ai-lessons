@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Lessons</title>
+<style>
+:root{--bg:#EEF2F5;--surface:#fff;--ink:#14213D;--mute:#5B6678;--line:#D5DCE4;--accent:#0B8F8A}
+@media (prefers-color-scheme:dark){:root{--bg:#0F1726;--surface:#17223A;--ink:#EAF0F7;--mute:#9AA8BD;--line:#2B3957;--accent:#3CC7C0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:680px;margin:0 auto;padding:48px 18px 60px}
+h1{font-size:2.2rem;line-height:1.15;margin:0 0 8px}
+.lead{color:var(--mute);margin:0 0 32px}
+ul{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+a.lesson{display:block;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;text-decoration:none;color:inherit;transition:border-color .15s}
+a.lesson:hover,a.lesson:focus-visible{border-color:var(--accent);outline:none}
+.lesson h2{font-size:1.2rem;margin:0 0 4px;color:var(--accent)}
+.lesson p{margin:0;color:var(--mute);font-size:.95rem}
+footer{margin-top:36px;color:var(--mute);font-size:.88rem}
+footer a{color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+<h1>AI Lessons</h1>
+<p class="lead">Interactive, web-based lessons built from existing materials. Each lesson credits its sources.</p>
+<ul>
+<li>
+<a class="lesson" href="how-neural-text-to-speech-works.html">
+<h2>How neural text to speech works</h2>
+<p>From text analysis to vocoders and streaming APIs. Based on an ElevenLabs article.</p>
+</a>
+</li>
+</ul>
+<footer>Have an idea or want to contribute? See the <a href="https://github.com/iamjonjackson/ai-lessons">repository</a>.</footer>
+</main>
+</body>
+</html>
