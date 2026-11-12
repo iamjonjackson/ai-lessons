@@ -13,6 +13,7 @@ button,a{font:inherit}.app{height:100%;display:grid;grid-template-rows:auto 1fr 
 </style>
 <style>
 .resources{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 0}.resource-link{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:7px 10px;color:var(--accent);background:var(--panel);font-size:.8rem;font-weight:700;text-decoration:none}.resource-link:hover,.resource-link:focus-visible{border-color:var(--accent);background:var(--soft)}
+.slide.quiz{justify-content:flex-start;padding-top:clamp(48px,7vw,88px);padding-bottom:clamp(48px,7vw,88px)}.slide.quiz .quiz{margin:0;padding-top:clamp(32px,5vw,56px)}
 </style>
 </head>
 <body>
@@ -291,6 +292,7 @@ function answerQuestion(button){
  });
  quiz.querySelector("[data-feedback]").innerHTML=`<div class="feedback"><strong>${right?"Correct.":"Not quite."}</strong> ${decodeURIComponent(quiz.dataset.explanation)}</div>`;
  quiz.dataset.answered="true";
+ quiz.closest(".slide").scrollTop=0;
 }
 window.answerQuestion=answerQuestion;
 $("prev").onclick=()=>{pos=Math.max(0,pos-1);render()};$("next").onclick=()=>{if(pos===slides.length-1){pos=0;score=0;answers.clear()}else pos++;render()};$("theme").onclick=()=>{const dark=document.documentElement.dataset.theme==="dark";document.documentElement.dataset.theme=dark?"":"dark";$("theme").textContent=dark?"Dark mode":"Light mode"};document.addEventListener("keydown",e=>{if(e.key==="ArrowRight")$("next").click();if(e.key==="ArrowLeft")$("prev").click();if(e.key==="Escape")$("overlay").innerHTML=""});render();
