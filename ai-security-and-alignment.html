@@ -187,11 +187,10 @@ function glossify(root){
 function openDialog(title,body){$("overlay").innerHTML=`<div class="overlay" role="presentation"><section class="dialog" role="dialog" aria-modal="true" aria-label="${title}"><button class="close" type="button">Close</button><h2>${title}</h2><div>${body}</div></section></div>`;$("overlay").querySelector(".close").onclick=()=>{$("overlay").innerHTML=""};$("overlay").querySelector(".overlay").onclick=e=>{if(e.target===e.currentTarget)$("overlay").innerHTML=""}}
 function sourceButton(s){return `<button class="learn" type="button" data-more>From the book ↗</button>`}
 function bookDetail(s){
- const context=s.more||"This lesson connects the chapter’s security principle to a practical agentic-system design decision.";
  const chapterKey=pos<24?"chapter1":"chapter2";
  const chapter=chapterKey==="chapter1"?"Chapter 1, “The AI and Security Problem”":"Chapter 2, “Alignment and Authority”";
  const excerpt=highlightedBookExcerpts[chapterKey][pos%highlightedBookExcerpts[chapterKey].length];
- return `<p><strong>${chapter}</strong></p><p>${context}</p><p><strong>Highlighted source extract.</strong></p><blockquote>${excerpt}</blockquote><p><strong>Source context.</strong> The book emphasizes that probabilistic models require deterministic enforcement around the actions they can take. Its recommended approach is to combine behavioral guidance with narrowly scoped identity, independent controls, and end-to-end evidence for investigation.</p><p><strong>Apply it.</strong> Treat this as a design prompt: identify the trust boundary, name the identity and delegated authority, define the hard control, then decide what telemetry proves the control worked.</p>`;
+ return `<p><strong>${chapter}</strong></p><p class="mini">Verbatim highlighted extract from the supplied early-release manuscript.</p><blockquote>${excerpt}</blockquote>`;
 }
 function exploreMore(){return `<div class="cards">${sourceLinks.map(([label,url])=>`<div class="card"><strong>${label}</strong><p><a href="${url}" target="_blank" rel="noopener noreferrer">Explore more ↗</a></p></div>`).join("")}</div>`}
 function bookFooter(){return `<p class="source-mini">Based on <a href="https://learning.oreilly.com/library/view/securing-ai-systems/0642572359133/" target="_blank" rel="noopener">Securing AI Systems</a>, Chapters 1–2, Dan Borges and Campbell, O’Reilly Media. Produced 12 November 2026 while the book was in early release. <button class="term" type="button" data-explore>Explore more ↗</button></p>`}
