@@ -96,7 +96,29 @@ const slides=[
 ];
 let pos=0,score=0,answered=new Set();
 const $=id=>document.getElementById(id);
-function termify(text){return text.replace(/\b(alignment|authority|least privilege|prompt injection|defense in depth|observability|zero trust|control decay|data exfiltration|red teaming)\b/gi,m=>`<button class="term" data-term="${m.toLowerCase()}">${m}</button>`)}
+function glossify(root){
+ for(const [term,definition] of Object.entries(terms)){
+  const expression=new RegExp(`\\b${term}\\b`,"i");
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:node=>{
+   const parent=node.parentElement;
+   return parent&&parent.closest("button,a,code,.source,.kicker")?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT;
+  }});
+  let node;
+  while(node=walker.nextNode()){
+   const match=expression.exec(node.nodeValue);
+   if(!match)continue;
+   const matched=node.splitText(match.index);
+   matched.splitText(match[0].length);
+   const trigger=document.createElement("button");
+   trigger.className="term";
+   trigger.type="button";
+   trigger.dataset.term=term;
+   trigger.textContent=matched.nodeValue;
+   matched.replaceWith(trigger);
+   break;
+  }
+ }
+}
 function openDialog(title,body){$("overlay").innerHTML=`<div class="overlay" role="presentation"><section class="dialog" role="dialog" aria-modal="true" aria-label="${title}"><button class="close" type="button">Close</button><h2>${title}</h2><p>${body}</p></section></div>`;$("overlay").querySelector(".close").onclick=()=>{$("overlay").innerHTML=""};$("overlay").querySelector(".overlay").onclick=e=>{if(e.target===e.currentTarget)$("overlay").innerHTML=""}}
 function sourceButton(s){return s.more?`<button class="learn" type="button" data-more>From the book ↗</button>`:""}
 function renderContent(s){
@@ -113,7 +135,7 @@ function renderContent(s){
 }
 function sourceFooter(){return `<p class="source">Source: <a href="https://learning.oreilly.com/library/view/securing-ai-systems/0642572359133/" target="_blank" rel="noopener">Securing AI Systems</a>, Chapters 1 “The AI and Security Problem” and 2 “Alignment and Authority,” Dan Borges and Campbell, O’Reilly Media. This lesson was produced 12 November 2026, while the book was in early release.</p><p class="source"><a href="index.html">← Back to AI Lessons</a></p>`}
 function render(){
- const s=slides[pos],slide=$("slide");slide.className=`slide ${s.type||""}`;slide.innerHTML=termify(renderContent(s));
+ const s=slides[pos],slide=$("slide");slide.className=`slide ${s.type||""}`;slide.innerHTML=renderContent(s);glossify(slide);
  $("progress").textContent=`${pos+1} / ${slides.length}`;$("bar").style.width=`${((pos+1)/slides.length)*100}%`;$("prev").disabled=pos===0;$("next").textContent=pos===slides.length-1?"Restart ↺":"Next →";
  slide.querySelectorAll(".term").forEach(b=>b.onclick=()=>openDialog(b.textContent,terms[b.dataset.term]));
  const more=slide.querySelector("[data-more]");if(more)more.onclick=()=>openDialog("From the book",s.more);
