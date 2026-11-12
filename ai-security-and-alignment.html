@@ -254,7 +254,7 @@ function renderContent(s){
  if(s.type==="quiz"){
   const selected=answers.get(pos);
   const feedback=selected===undefined?"":`<div class="feedback"><strong>${selected===s.answer?"Correct.":"Not quite."}</strong> ${s.explain}</div>`;
-  return `<div class="quiz"><p class="kicker">Knowledge check ${s.number}</p><h2>${s.question}</h2><div class="options">${s.options.map((o,i)=>`<button class="option ${selected===undefined?"":i===s.answer?"good":i===selected?"bad":""}" type="button" data-answer="${i}" ${selected===undefined?"":"disabled"}>${o}</button>`).join("")}</div><div id="feedback">${feedback}</div></div>`;
+  return `<div class="quiz"><p class="kicker">Knowledge check ${s.number}</p><h2>${s.question}</h2><div class="options">${s.options.map((o,i)=>`<button class="option ${selected===undefined?"":i===s.answer?"good":i===selected?"bad":""}" type="button" data-answer="${i}" data-slide="${pos}" onclick="answerQuestion(this)" ${selected===undefined?"":"disabled"}>${o}</button>`).join("")}</div><div id="feedback">${feedback}</div></div>`;
  }
  if(s.type==="intro")return `<div class="intro"><p class="kicker">Interactive lesson · 12 November 2026</p><h1>${s.title}</h1><p class="lede">${s.text}</p><p class="source">${s.note} <a href="https://learning.oreilly.com/library/view/securing-ai-systems/0642572359133/" target="_blank" rel="noopener">Source ↗</a></p></div>`;
  if(s.type==="final")return `<div class="final"><p class="kicker">Lesson complete</p><h2>${s.title}</h2><p class="lede">${s.text}</p>${sourceFooter()}</div>`;
@@ -274,11 +274,12 @@ function render(){
  $("progress").textContent=`${pos+1} / ${slides.length}`;$("bar").style.width=`${((pos+1)/slides.length)*100}%`;$("prev").disabled=pos===0;$("next").textContent=pos===slides.length-1?"Restart ↺":"Next →";
  slide.querySelectorAll(".term").forEach(b=>b.onclick=()=>openDialog(b.textContent,terms[b.dataset.term]));
  const more=slide.querySelector("[data-more]");if(more)more.onclick=()=>openDialog("From the book",bookDetail(s));
- slide.querySelectorAll("[data-answer]").forEach(option=>option.addEventListener("click",()=>answer(+option.dataset.answer,s)));
- slide.onclick=event=>{const option=event.target.closest("[data-answer]");if(option)answer(+option.dataset.answer,s)};
+ slide.onclick=null;
  if(s.type==="final")$("final-score").textContent=`${score} / ${slides.filter(x=>x.type==="quiz").length}`;
 }
-function answer(choice,s){if(answers.has(pos))return;answers.set(pos,choice);const right=choice===s.answer;if(right)score++;document.querySelectorAll("[data-answer]").forEach(b=>{const n=+b.dataset.answer;b.disabled=true;b.classList.add(n===s.answer?"good":n===choice?"bad":"")});$("feedback").innerHTML=`<div class="feedback"><strong>${right?"Correct.":"Not quite."}</strong> ${s.explain}</div>`}
+function answer(choice,s,index,quiz){if(answers.has(index))return;answers.set(index,choice);const right=choice===s.answer;if(right)score++;quiz.querySelectorAll("[data-answer]").forEach(b=>{const n=+b.dataset.answer;b.disabled=true;b.classList.add(n===s.answer?"good":n===choice?"bad":"")});quiz.querySelector("#feedback").innerHTML=`<div class="feedback"><strong>${right?"Correct.":"Not quite."}</strong> ${s.explain}</div>`}
+function answerQuestion(button){const index=Number(button.dataset.slide),slide=slides[index],quiz=button.closest(".quiz");if(slide&&quiz)answer(Number(button.dataset.answer),slide,index,quiz)}
+window.answerQuestion=answerQuestion;
 $("prev").onclick=()=>{pos=Math.max(0,pos-1);render()};$("next").onclick=()=>{if(pos===slides.length-1){pos=0;score=0;answers.clear()}else pos++;render()};$("theme").onclick=()=>{const dark=document.documentElement.dataset.theme==="dark";document.documentElement.dataset.theme=dark?"":"dark";$("theme").textContent=dark?"Dark mode":"Light mode"};document.addEventListener("keydown",e=>{if(e.key==="ArrowRight")$("next").click();if(e.key==="ArrowLeft")$("prev").click();if(e.key==="Escape")$("overlay").innerHTML=""});render();
 document.addEventListener("click",event=>{const link=event.target.closest('a[target="_blank"]');if(link){event.preventDefault();window.open(link.href,"_blank","noopener,noreferrer")}});
 </script>
