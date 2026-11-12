@@ -195,7 +195,7 @@ function bookDetail(s){
  const chapterKey=pos<24?"chapter1":"chapter2";
  const chapter=chapterKey==="chapter1"?"Chapter 1, “The AI and Security Problem”":"Chapter 2, “Alignment and Authority”";
  const excerpt=highlightedBookExcerpts[chapterKey][pos%highlightedBookExcerpts[chapterKey].length];
- return `<p><strong>${chapter}</strong></p><p class="mini">Verbatim highlighted extract from the supplied early-release manuscript.</p><blockquote>${excerpt}</blockquote>`;
+ return `<p><strong>${chapter}</strong></p><blockquote>${excerpt}</blockquote>`;
 }
 function exploreMore(){return `<div class="cards">${sourceLinks.map(([label,url])=>`<div class="card"><strong>${label}</strong><p><a href="${url}" target="_blank" rel="noopener noreferrer">Explore more ↗</a></p></div>`).join("")}</div>`}
 function bookFooter(){return `<p class="source-mini">Based on <a href="https://learning.oreilly.com/library/view/securing-ai-systems/0642572359133/" target="_blank" rel="noopener">Securing AI Systems</a>, Chapters 1–2, Dan Borges and Campbell, O’Reilly Media. Produced 12 November 2026 while the book was in early release. <button class="term" type="button" data-explore>Explore more ↗</button></p>`}
