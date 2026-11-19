@@ -156,27 +156,57 @@ const highlightedBookExcerpts={
 };
 let knowledgeCheckNumber=0;
 const bookExcerptMap={
+ "AI Security<br>and Alignment":[["chapter2",0]],
+ "How to use this lesson":[["chapter1",7]],
  "The central distinction":[["chapter2",0]],
+ "Which statement best captures the relationship between alignment and security?":[["chapter2",0]],
  "Why this matters now":[["chapter2",6]],
+ "A security lens built from history":[["chapter1",0]],
  "Meet BICO":[["chapter1",0]],
  "B: Behaviour":[["chapter2",8]],
+ "I: Identity":[["chapter1",14]],
  "C: Controls":[["chapter1",1]],
+ "O: Observability":[["chapter1",0]],
+ "A prompt tells an agent not to upload a report. Which addition is a control?":[["chapter1",1]],
+ "BICO as a failure plan":[["chapter1",15]],
  "Probabilistic by design":[["chapter1",8]],
  "The prompt is not a permission system":[["chapter1",2]],
  "Prompt traceability is still valuable":[["chapter1",9]],
+ "Why should a reusable prompt library be reviewed like a software supply-chain component?":[["chapter1",9]],
  "Context is working memory—not a vault":[["chapter1",3]],
+ "Artifact-driven workflows":[["chapter1",3]],
  "Verify before trust":[["chapter1",10]],
+ "Which setup best preserves independence between AI-generated implementation and validation?":[["chapter1",11]],
+ "Human-in-the-loop (HITL)":[["chapter2",5]],
+ "Tiered autonomy":[["chapter2",7]],
  "Tool use changes the problem":[["chapter2",4]],
  "Separation of duties":[["chapter1",12]],
+ "What is the primary security benefit of separating a broad agent into focused tools?":[["chapter1",12]],
  "Start locked down, then pivot":[["chapter2",7]],
+ "ALARA: structured agents":[["chapter2",17]],
+ "What structured scoping buys you":[["chapter2",17]],
+ "Threat modelling: play devil’s advocate":[["chapter1",4]],
+ "Which question belongs earliest in a threat-modelling exercise?":[["chapter1",4]],
+ "Risk needs two dimensions":[["chapter1",4]],
  "Red team before attackers do":[["chapter1",4]],
  "The Lethal Trifecta":[["chapter1",5]],
+ "Which change most directly breaks the Lethal Trifecta for a document-reading agent?":[["chapter1",5]],
  "Untrusted input is everywhere":[["chapter1",13]],
+ "Prompt injection is a systems problem":[["chapter1",13]],
  "Access controls at boundaries":[["chapter1",14]],
+ "An agent calls a payroll API on behalf of an employee. What should the service verify?":[["chapter1",14]],
+ "Control decay is real":[["chapter1",6]],
+ "Defence in depth":[["chapter1",1]],
  "Least privilege for agents":[["chapter2",5]],
+ "Which credential design follows least privilege?":[["chapter2",5]],
  "Supply-chain risk includes AI output":[["chapter1",11]],
+ "Monitor what you cannot control":[["chapter1",0]],
  "Fail securely":[["chapter1",15]],
- "Planning is a security control":[["chapter1",7]]
+ "A policy service is unavailable just before an agent sends a customer export. What is the safest default?":[["chapter1",15]],
+ "Planning is a security control":[["chapter1",7]],
+ "A practical design review":[["chapter1",7]],
+ "Bring it together":[["chapter1",0]],
+ "You completed<br>AI Security and Alignment":[["chapter1",0]]
 };
 const slidePoints={
  "The central distinction":["Alignment changes likely model behaviour, not the permissions around it.","Security governs what the deployed system may access or execute.","Deterministic enforcement belongs in the surrounding system."],
@@ -279,9 +309,10 @@ function glossify(root){
  }
 }
 function openDialog(title,body){$("overlay").innerHTML=`<div class="overlay" role="presentation"><section class="dialog" role="dialog" aria-modal="true" aria-label="${title}"><button class="close" type="button">Close</button><h2>${title}</h2><div>${body}</div></section></div>`;$("overlay").querySelector(".close").onclick=()=>{$("overlay").innerHTML=""};$("overlay").querySelector(".overlay").onclick=e=>{if(e.target===e.currentTarget)$("overlay").innerHTML=""}}
-function sourceButton(s){return bookExcerptMap[s.title]?`<button class="learn" type="button" data-more>From the book ↗</button>`:""}
+function bookKey(s){return s.title||s.question}
+function sourceButton(s){return bookExcerptMap[bookKey(s)]?`<button class="learn" type="button" data-more>From the book ↗</button>`:""}
 function bookDetail(s){
- const selection=bookExcerptMap[s.title]?.[0];
+ const selection=bookExcerptMap[bookKey(s)]?.[0];
  if(!selection)return "";
  const [chapterKey,index]=selection;
  const chapter=chapterKey==="chapter1"?"Chapter 1, “The AI and Security Problem”":"Chapter 2, “Alignment and Authority”";
@@ -309,10 +340,10 @@ function renderContent(s){
  if(s.type==="quiz"){
   const selected=answers.get(pos);
   const feedback=selected===undefined?"":`<div class="feedback"><strong>${selected===s.answer?"Correct.":"Not quite."}</strong> ${s.explain}</div>`;
-  return `<div class="quiz" data-explanation="${encodeURIComponent(s.explain)}"><p class="kicker">Knowledge check ${s.number}</p><h2>${s.question}</h2><div class="options">${s.options.map((o,i)=>`<button class="option ${selected===undefined?"":i===s.answer?"good":i===selected?"bad":""}" type="button" data-answer="${i}" data-correct="${i===s.answer}" data-slide="${pos}" ${selected===undefined?"":"disabled"}>${o}</button>`).join("")}</div><div data-feedback>${feedback}</div></div>`;
+ return `<div class="quiz" data-explanation="${encodeURIComponent(s.explain)}">${sourceButton(s)}<p class="kicker">Knowledge check ${s.number}</p><h2>${s.question}</h2><div class="options">${s.options.map((o,i)=>`<button class="option ${selected===undefined?"":i===s.answer?"good":i===selected?"bad":""}" type="button" data-answer="${i}" data-correct="${i===s.answer}" data-slide="${pos}" ${selected===undefined?"":"disabled"}>${o}</button>`).join("")}</div><div data-feedback>${feedback}</div></div>`;
  }
- if(s.type==="intro")return `<div class="intro"><p class="kicker">Interactive lesson · 12 November 2026</p><h1>${s.title}</h1><p class="lede">${s.text}</p><p class="source">${s.note} <a href="https://learning.oreilly.com/library/view/securing-ai-systems/0642572359133/" target="_blank" rel="noopener">Source ↗</a></p></div>`;
- if(s.type==="final")return `<div class="final"><p class="kicker">Lesson complete</p><h2>${s.title}</h2><p class="lede">${s.text}</p>${sourceFooter()}</div>`;
+ if(s.type==="intro")return `<div class="intro">${sourceButton(s)}<p class="kicker">Interactive lesson · 12 November 2026</p><h1>${s.title}</h1><p class="lede">${s.text}</p><p class="source">${s.note} <a href="https://learning.oreilly.com/library/view/securing-ai-systems/0642572359133/" target="_blank" rel="noopener">Source ↗</a></p></div>`;
+ if(s.type==="final")return `<div class="final">${sourceButton(s)}<p class="kicker">Lesson complete</p><h2>${s.title}</h2><p class="lede">${s.text}</p>${sourceFooter()}</div>`;
  let extra="";
  if(s.bico)extra=`<div class="bico"><div><b>Behaviour</b><p>What it should do.</p></div><div><b>Identity</b><p>Who acts and on whose behalf.</p></div><div><b>Controls</b><p>What it can actually do.</p></div><div><b>Observability</b><p>Evidence of what happened.</p></div></div>`;
  if(s.cards)extra+=`<div class="cards">${s.cards.map(c=>`<div class="card"><strong>${c[0]}</strong><p>${c[1]}</p></div>`).join("")}</div>`;
