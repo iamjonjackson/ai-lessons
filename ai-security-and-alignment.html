@@ -30,7 +30,7 @@ button,a{font:inherit}.app{height:100%;display:grid;grid-template-rows:auto 1fr 
       <span class="progress" id="progress"></span>
       <button class="nav next" id="next" type="button">Next →</button>
     </div>
-    <p class="footer-source">Based on <a href="https://learning.oreilly.com/library/view/securing-ai-systems/0642572359133/" target="_blank" rel="noopener">Securing AI Systems</a>, Chapters 1–2, Dan Borges and Campbell, O’Reilly Media. Produced 12 November 2026 while the book was in early release.</p>
+    <p class="footer-source">Based on <a href="https://learning.oreilly.com/library/view/securing-ai-systems/0642572359133/" target="_blank" rel="noopener">Securing AI Systems</a>, Chapters 1–2, Dan Borges and Campbell, O’Reilly Media. Produced in November 2026 while the book was in early release.</p>
   </footer>
 </main>
 <div id="overlay"></div>
@@ -295,7 +295,7 @@ function renderContent(s){
   const feedback=selected===undefined?"":`<div class="feedback"><strong>${selected===s.answer?"Correct.":"Not quite."}</strong> ${s.explain}</div>`;
  return `<div class="quiz" data-explanation="${encodeURIComponent(s.explain)}">${sourceButton(s)}<p class="kicker">Knowledge check ${s.number}</p><h2>${s.question}</h2><div class="options">${s.options.map((o,i)=>`<button class="option ${selected===undefined?"":i===s.answer?"good":i===selected?"bad":""}" type="button" data-answer="${i}" data-correct="${i===s.answer}" data-slide="${pos}" ${selected===undefined?"":"disabled"}>${o}</button>`).join("")}</div><div data-feedback>${feedback}</div></div>`;
  }
- if(s.type==="intro")return `<div class="intro">${sourceButton(s)}<p class="kicker">Interactive lesson · 12 November 2026</p><h1>${s.title}</h1><p class="lede">${s.text}</p><p class="source">${s.note} <a href="https://learning.oreilly.com/library/view/securing-ai-systems/0642572359133/" target="_blank" rel="noopener">Source ↗</a></p></div>`;
+ if(s.type==="intro")return `<div class="intro">${sourceButton(s)}<p class="kicker">Interactive lesson · November 2026</p><h1>${s.title}</h1><p class="lede">${s.text}</p><p class="source">${s.note} <a href="https://learning.oreilly.com/library/view/securing-ai-systems/0642572359133/" target="_blank" rel="noopener">Source ↗</a></p></div>`;
  if(s.type==="final")return `<div class="final">${sourceButton(s)}<p class="kicker">Lesson complete</p><h2>${s.title}</h2><p class="lede">${s.text}</p>${sourceFooter()}</div>`;
  let extra="";
  if(s.bico)extra=`<div class="bico"><div><b>Behaviour</b><p>What it should do.</p></div><div><b>Identity</b><p>Who acts and on whose behalf.</p></div><div><b>Controls</b><p>What it can actually do.</p></div><div><b>Observability</b><p>Evidence of what happened.</p></div></div>`;
@@ -307,7 +307,7 @@ function renderContent(s){
  const keyPointList=keyPoints.length?`<p class="lens-label">Key points</p><ul class="takeaways">${keyPoints.map(point=>`<li>${point}</li>`).join("")}</ul>`:"";
  return `<p class="kicker">AI security & alignment</p><h2>${s.title}</h2><p class="lede">${s.text}</p>${extra}${keyPointList}${relevantResources(s)}${sourceButton(s)}`;
 }
-function sourceFooter(){return `<p class="source">Source: <a href="https://learning.oreilly.com/library/view/securing-ai-systems/0642572359133/" target="_blank" rel="noopener">Securing AI Systems</a>, Chapters 1 “The AI and Security Problem” and 2 “Alignment and Authority,” Dan Borges and Campbell, O’Reilly Media. This lesson was produced 12 November 2026, while the book was in early release.</p><p class="source"><a href="index.html">← Back to AI Lessons</a></p>`}
+function sourceFooter(){return `<p class="source">Source: <a href="https://learning.oreilly.com/library/view/securing-ai-systems/0642572359133/" target="_blank" rel="noopener">Securing AI Systems</a>, Chapters 1 “The AI and Security Problem” and 2 “Alignment and Authority,” Dan Borges and Campbell, O’Reilly Media. This lesson was produced in November 2026, while the book was in early release.</p><p class="source"><a href="index.html">← Back to AI Lessons</a></p>`}
 function render(){
  const s=slides[pos],slide=$("slide");slide.className=`slide ${s.type||""}`;slide.innerHTML=renderContent(s);glossify(slide);
  $("progress").textContent=`${pos+1} / ${slides.length}`;$("bar").style.width=`${((pos+1)/slides.length)*100}%`;$("prev").disabled=pos===0;$("next").textContent=pos===slides.length-1?"Restart ↺":"Next →";
