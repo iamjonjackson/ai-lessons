@@ -178,6 +178,22 @@ const bookExcerptMap={
  "Fail securely":[["chapter1",15]],
  "Planning is a security control":[["chapter1",7]]
 };
+const slidePoints={
+ "The central distinction":["Alignment changes likely model behaviour, not the permissions around it.","Security governs what the deployed system may access or execute.","Deterministic enforcement belongs in the surrounding system."],
+ "A security lens built from history":["Identity and observability help trace an agent’s actions and downstream effects.","Controls should constrain capability independently of model decision-making.","Established security principles remain useful across new implementations."],
+ "B: Behaviour":["Alignment shapes likely outputs but does not enforce runtime permissions.","Prompt conditions can fail when the system is under stress or handling unexpected input.","Use external controls to make unsafe actions impossible or difficult."],
+ "O: Observability":["Trace the workload, initiating user, and agent identity.","Record delegated authority, policy decisions, target resources, and time.","Logs should explain effects and decisions, not only model text."],
+ "BICO as a failure plan":["A failure should not grant extra permissions or broaden capability.","Fail securely when authorisation or policy checks cannot be completed.","Looping failures can create real financial and operational impact."],
+ "The prompt is not a permission system":["A prompt can describe intended constraints but cannot enforce them.","Access decisions need independent identity and authorisation checks.","Prompt-only security creates a false sense of control."],
+ "Artifact-driven workflows":["Plans, execution logs, and summaries give agents stable anchors.","Reviewable artefacts create checkpoints between stages or agents.","Summaries preserve continuity without pretending the system has perfect memory."],
+ "Verify before trust":["Treat generated code as untrusted until a human reviews it.","Use small changes, branches, tests, linting, and dependency checks.","A staged review process makes errors easier to detect before release."],
+ "Tiered autonomy":["Keep independent operation bounded to low-risk work.","Require approval when actions are high-impact or difficult to reverse.","Use human feedback to improve prompts, policies, and controls."],
+ "Tool use changes the problem":["Tool access turns a model response into an action with authority.","The surrounding system decides what happens on disk, over the network, or in infrastructure.","Controls must constrain the action rather than trust the proposed behaviour."],
+ "Red team before attackers do":["Proactively explore how the application could fail or be abused.","Include malicious attacks, design defects, operational mistakes, and unexpected interactions.","Use findings to improve controls, guardrails, and monitoring."],
+ "Access controls at boundaries":["Authenticate the actor and verify delegated authority.","Authorise the requested action at every trust boundary.","Do not treat a model instruction as proof of permission."],
+ "Control decay is real":["Exceptions and integrations can make an existing control too permissive.","Controls need recurring tests, updates, and challenge exercises.","Automation should not become set-and-forget."],
+ "Monitor what you cannot control":["Observe critical interactions and security functions.","Centralised telemetry supports detection, investigation, and accountability.","You cannot secure behaviours that you cannot observe."]
+};
 const q=(question,options,answer,explain)=>({type:"quiz",number:++knowledgeCheckNumber,question:question.replace(/^Knowledge check \d+:\s*/i,""),options,answer,explain});
 const slides=[
  {type:"intro",title:"AI Security<br>and Alignment",text:"An interactive lesson on shaping model behaviour, limiting real-world authority, and building agentic systems that can withstand failure.",note:"Based on Chapters 1–2 of <em>Securing AI Systems</em> by Dan Borges and Campbell, in early release when this lesson was produced."},
@@ -303,10 +319,9 @@ function renderContent(s){
  if(s.flow)extra+=`<div class="flow">${s.flow.map((x,i)=>`${i?"<i>→</i>":""}<span>${x}</span>`).join("")}</div>`;
  if(s.stack)extra+=`<div class="stack">${s.stack.map(x=>`<div class="step"><b>${x[0]}</b><p>${x[1]}</p></div>`).join("")}</div>`;
  if(s.quote)extra+=`<div class="callout ${s.danger?"danger":""}"><p class="quote">${s.quote}</p></div>`;
- const beforeBico=pos<6;
- const takeaways=s.points||(beforeBico?["What should the system do?","Who or what is acting?","What technically limits the action?","What evidence records what happened?"]:["Behaviour: What should the system do?","Identity: Who is acting, and on whose behalf?","Controls: What technically limits the action?","Observability: What evidence records what happened?"]);
- const takeawayList=!s.bico&&!s.cards&&!s.flow&&!s.stack?`<p class="lens-label">${beforeBico?"Apply the security lens":"Apply the BICO lens"}</p><p class="lens-intro">Use these four questions to test the idea on this slide.</p><ul class="takeaways">${takeaways.map(point=>`<li>${point}</li>`).join("")}</ul>`:"";
- return `<p class="kicker">AI security & alignment</p><h2>${s.title}</h2><p class="lede">${s.text}</p>${extra}${takeawayList}${relevantResources(s)}${sourceButton(s)}`;
+ const keyPoints=slidePoints[s.title]||s.points||[];
+ const keyPointList=keyPoints.length?`<p class="lens-label">Key points</p><ul class="takeaways">${keyPoints.map(point=>`<li>${point}</li>`).join("")}</ul>`:"";
+ return `<p class="kicker">AI security & alignment</p><h2>${s.title}</h2><p class="lede">${s.text}</p>${extra}${keyPointList}${relevantResources(s)}${sourceButton(s)}`;
 }
 function sourceFooter(){return `<p class="source">Source: <a href="https://learning.oreilly.com/library/view/securing-ai-systems/0642572359133/" target="_blank" rel="noopener">Securing AI Systems</a>, Chapters 1 “The AI and Security Problem” and 2 “Alignment and Authority,” Dan Borges and Campbell, O’Reilly Media. This lesson was produced 12 November 2026, while the book was in early release.</p><p class="source"><a href="index.html">← Back to AI Lessons</a></p>`}
 function render(){
