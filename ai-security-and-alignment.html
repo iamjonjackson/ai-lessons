@@ -152,6 +152,29 @@ const highlightedBookExcerpts={
  ]
 };
 let knowledgeCheckNumber=0;
+const bookExcerptMap={
+ "The central distinction":[["chapter2",0]],
+ "Why this matters now":[["chapter2",6]],
+ "Meet BICO":[["chapter1",0]],
+ "B: Behaviour":[["chapter2",8]],
+ "C: Controls":[["chapter1",1]],
+ "Probabilistic by design":[["chapter1",8]],
+ "The prompt is not a permission system":[["chapter1",2]],
+ "Prompt traceability is still valuable":[["chapter1",9]],
+ "Context is working memory—not a vault":[["chapter1",3]],
+ "Verify before trust":[["chapter1",10]],
+ "Tool use changes the problem":[["chapter2",4]],
+ "Separation of duties":[["chapter1",12]],
+ "Start locked down, then pivot":[["chapter2",7]],
+ "Red team before attackers do":[["chapter1",4]],
+ "The Lethal Trifecta":[["chapter1",5]],
+ "Untrusted input is everywhere":[["chapter1",13]],
+ "Access controls at boundaries":[["chapter1",14]],
+ "Least privilege for agents":[["chapter2",5]],
+ "Supply-chain risk includes AI output":[["chapter1",11]],
+ "Fail securely":[["chapter1",15]],
+ "Planning is a security control":[["chapter1",7]]
+};
 const q=(question,options,answer,explain)=>({type:"quiz",number:++knowledgeCheckNumber,question:question.replace(/^Knowledge check \d+:\s*/i,""),options,answer,explain});
 const slides=[
  {type:"intro",title:"AI Security<br>and Alignment",text:"An interactive lesson on shaping model behaviour, limiting real-world authority, and building agentic systems that can withstand failure.",note:"Based on Chapters 1–2 of <em>Securing AI Systems</em> by Dan Borges and Campbell, in early release when this lesson was produced."},
@@ -237,14 +260,13 @@ function glossify(root){
  }
 }
 function openDialog(title,body){$("overlay").innerHTML=`<div class="overlay" role="presentation"><section class="dialog" role="dialog" aria-modal="true" aria-label="${title}"><button class="close" type="button">Close</button><h2>${title}</h2><div>${body}</div></section></div>`;$("overlay").querySelector(".close").onclick=()=>{$("overlay").innerHTML=""};$("overlay").querySelector(".overlay").onclick=e=>{if(e.target===e.currentTarget)$("overlay").innerHTML=""}}
-function sourceButton(s){return `<button class="learn" type="button" data-more>From the book ↗</button>`}
+function sourceButton(s){return bookExcerptMap[s.title]?`<button class="learn" type="button" data-more>From the book ↗</button>`:""}
 function bookDetail(s){
- const chapterKey=pos<24?"chapter1":"chapter2";
+ const selection=bookExcerptMap[s.title]?.[0];
+ if(!selection)return "";
+ const [chapterKey,index]=selection;
  const chapter=chapterKey==="chapter1"?"Chapter 1, “The AI and Security Problem”":"Chapter 2, “Alignment and Authority”";
- const excerpts=highlightedBookExcerpts[chapterKey];
- const first=excerpts[pos%excerpts.length];
- const second=excerpts[(pos+1)%excerpts.length];
- return `<p><strong>${chapter}</strong></p><blockquote>${first}</blockquote><blockquote>${second}</blockquote>`;
+ return `<p><strong>${chapter}</strong></p><blockquote>${highlightedBookExcerpts[chapterKey][index]}</blockquote>`;
 }
 function relevantResources(s){
  const labels=slideResources[s.title]||[];
