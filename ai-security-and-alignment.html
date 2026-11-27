@@ -182,7 +182,7 @@ const bookExcerptMap={
  "Untrusted input is everywhere":[["chapter1",23]],
  "Prompt injection is a systems problem":[["chapter1",24]],
  "Access controls at boundaries":[["chapter1",25]],
- "Control decay is real":[["chapter1",26]],
+ "Control decay":[["chapter1",26]],
  "Defence in depth":[["chapter1",27]],
  "Least privilege for agents":[["chapter1",28]],
  "Supply-chain risk includes AI output":[["chapter1",29]],
@@ -206,7 +206,7 @@ const slidePoints={
  "Tool use changes the problem":["Tool access turns a model response into an action with authority.","The surrounding system decides what happens on disk, over the network, or in infrastructure.","Controls must constrain the action rather than trust the proposed behaviour."],
  "Red team before attackers do":["Proactively explore how the application could fail or be abused.","Include malicious attacks, design defects, operational mistakes, and unexpected interactions.","Use findings to improve controls, guardrails, and monitoring."],
  "Access controls at boundaries":["Authenticate the actor and verify delegated authority.","Authorise the requested action at every trust boundary.","Do not treat a model instruction as proof of permission."],
- "Control decay is real":["Exceptions and integrations can make an existing control too permissive.","Controls need recurring tests, updates, and challenge exercises.","Automation should not become set-and-forget."],
+ "Control decay":["Exceptions and integrations can make an existing control too permissive.","Controls need recurring tests, updates, and challenge exercises.","Automation should not become set-and-forget."],
  "Monitor what you cannot control":["Observe critical interactions and security functions.","Centralised telemetry supports detection, investigation, and accountability.","You cannot secure behaviours that you cannot observe."]
 };
 const q=(question,options,answer,explain)=>({type:"quiz",number:++knowledgeCheckNumber,question:question.replace(/^Knowledge check \d+:\s*/i,""),options,answer,explain});
@@ -250,7 +250,7 @@ const slides=[
  {title:"Prompt injection is a systems problem",text:"Injection is not solved simply by asking the model to ignore malicious text. Instead, isolate model reasoning from execution and use deterministic controls around actions the model proposes.",flow:["Untrusted content","Model interpretation","Proposed action","Policy validation","Scoped tool execution"]},
  {title:"Access controls at boundaries",text:"Every crossing where assumptions change is a <strong>trust boundary</strong>: user to service, service to API, agent to tool, environment to network, or one delegated identity to another. Verify identity and authorisation at each one.",more:"The book’s principle: “Access decisions should require verified identity and explicit authorisation before actions are permitted.”"},
  q("Knowledge check 8: An agent calls a payroll API on behalf of an employee. What should the service verify?",["Only that the model produced grammatically correct JSON.","Verify agent identity, delegation, and authorisation.","That the agent’s system prompt says it is trustworthy.","Only the employee’s network location."],1,"Identity and delegation establish who is acting and on whose authority; authorisation determines whether that action is allowed."),
- {title:"Control decay is real",text:"Controls weaken as exceptions accumulate, integrations change, and teams modify old rules. A firewall can still exist while becoming broadly permissive. Controls require recurring tests and redesign.",quote:"“Security controls lose effectiveness over time unless continuously tested, updated, and challenged.”"},
+ {title:"Control decay",text:"Controls weaken as exceptions accumulate, integrations change, and teams modify old rules. A firewall can still exist while becoming broadly permissive. Controls require recurring tests and redesign.",quote:"“Security controls lose effectiveness over time unless continuously tested, updated, and challenged.”"},
  {title:"Defence in depth",text:"Assume one control will fail. Layer independent safeguards so a failure in prompts, policy, identity, network, approval, or detection does not create total compromise.",cards:[["Prevent","Least privilege, sandboxing, allow-lists."],["Constrain","Transaction limits, scoped tools, egress controls."],["Detect","Correlated logs and anomaly monitoring."],["Respond","Revocation, approval, rollback, incident playbooks."]]},
  {title:"Least privilege for agents",text:"Give every component the smallest authority necessary for a specific task and duration. Prefer task-scoped, short-lived credentials over a standing administrator token in context.",more:"The chapter connects over-privileged agents to oversized attack surfaces, wider error impact, and privilege escalation—especially troubling for probabilistic systems."},
  q("Knowledge check 9: Which credential design follows least privilege?",["One permanent production-admin key shared by every agent.","A short-lived token for one approved record update.","A hidden token in the system prompt.","A token with every permission except one dangerous API."],1,"The narrow, short-lived token limits both what an agent can do and the duration of a possible misuse."),
